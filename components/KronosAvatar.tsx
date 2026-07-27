@@ -6,7 +6,7 @@ interface KronosAvatarProps {
 }
 
 export default function KronosAvatar({ size = 32, spinning = false }: KronosAvatarProps) {
-  const id = "kg";
+  const id = "kp";
   return (
     <svg
       width={size}
@@ -18,31 +18,31 @@ export default function KronosAvatar({ size = 32, spinning = false }: KronosAvat
       style={{ animationDuration: "3s" }}
     >
       <defs>
-        <linearGradient id={`${id}-a`} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#1d4ed8" />
-          <stop offset="50%"  stopColor="#0f172a" />
-          <stop offset="100%" stopColor="#334155" />
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#a21caf" />
+          <stop offset="50%"  stopColor="#6b21a8" />
+          <stop offset="100%" stopColor="#1e1b4b" />
         </linearGradient>
-        <linearGradient id={`${id}-b`} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#10b981" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
+        <linearGradient id={`${id}-fg`} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#e879f9" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#818cf8" stopOpacity="0.85" />
         </linearGradient>
       </defs>
 
-      {/* Background */}
-      <rect width="32" height="32" rx="8" fill={`url(#${id}-a)`} />
+      {/* Premium gradient background */}
+      <rect width="32" height="32" rx="8" fill={`url(#${id}-bg)`} />
 
-      {/* K letter */}
+      {/* Stylized K letter */}
       <path
         d="M9 8v16M9 16l8-8M9 16l8 8"
-        stroke={`url(#${id}-b)`}
+        stroke={`url(#${id}-fg)`}
         strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
-      {/* Corner accent */}
-      <circle cx="23" cy="9" r="2" fill="#10b981" opacity="0.8" />
+      {/* Sparkle accent dot */}
+      <circle cx="23" cy="9" r="2" fill="#c084fc" opacity="0.9" />
     </svg>
   );
 }

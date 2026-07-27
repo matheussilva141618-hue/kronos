@@ -1,9 +1,3 @@
-"use client";
-
-import * as XLSX from "xlsx";
-
-// ─── TYPES ────────────────────────────────────────────────────────────────────
-
 export interface ExportRow {
   [key: string]: string | number;
 }
@@ -16,14 +10,13 @@ export interface ExportTable {
 
 // ─── EXCEL ────────────────────────────────────────────────────────────────────
 
-export function generateExcel(table: ExportTable, filename = "relatorio-kronos.xlsx") {
-  const wb = XLSX.utils.book_new();
+export async function generateExcel(table: ExportTable, filename = "relatorio-kronos.xlsx") {
+  const XLSX = await import("xlsx");
 
-  // Monta array com cabeçalho + linhas
+  const wb = XLSX.utils.book_new();
   const sheetData = [table.headers, ...table.rows];
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Largura automática das colunas
   const colWidths = table.headers.map((h, i) => {
     const maxLen = Math.max(
       h.length,
@@ -45,17 +38,14 @@ export async function generatePDF(
   table: ExportTable,
   filename = "relatorio-kronos.pdf"
 ) {
-  // Import dinâmico para evitar SSR
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
 
-  // ── Cabeçalho ──
-  doc.setFillColor(15, 15, 15); // quase preto
+  doc.setFillColor(15, 15, 15);
   doc.rect(0, 0, pageW, 28, "F");
 
   doc.setTextColor(240, 240, 240);
@@ -73,7 +63,6 @@ export async function generatePDF(
   });
   doc.text(dateStr, pageW - margin, 18, { align: "right" });
 
-  // ── Título do relatório ──
   doc.setTextColor(20, 20, 20);
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
@@ -87,32 +76,16 @@ export async function generatePDF(
     doc.text(lines, margin, 47);
   }
 
-  // ── Tabela ──
   autoTable(doc, {
     startY: subtitle ? 58 : 48,
     head: [table.headers],
     body: table.rows.map((r) => r.map(String)),
     margin: { left: margin, right: margin },
-    headStyles: {
-      fillColor: [20, 20, 20],
-      textColor: [240, 240, 240],
-      fontStyle: "bold",
-      fontSize: 9,
-    },
-    bodyStyles: {
-      fontSize: 9,
-      textColor: [30, 30, 30],
-    },
-    alternateRowStyles: {
-      fillColor: [245, 245, 245],
-    },
-    styles: {
-      cellPadding: 3,
-      lineColor: [210, 210, 210],
-      lineWidth: 0.2,
-    },
+    headStyles: { fillColor: [20, 20, 20], textColor: [240, 240, 240], fontStyle: "bold", fontSize: 9 },
+    bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    styles: { cellPadding: 3, lineColor: [210, 210, 210], lineWidth: 0.2 },
     didDrawPage: (data) => {
-      // Rodapé em todas as páginas
       const pageCount = (doc as unknown as { internal: { getNumberOfPages: () => number } })
         .internal.getNumberOfPages();
       doc.setFontSize(7);
