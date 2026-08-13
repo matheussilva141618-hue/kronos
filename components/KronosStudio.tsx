@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Sparkles, Send, Download, Square, Copy, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, Send, Download, Square, Copy, Check, FileCode, FolderOpen, Image as ImageIcon } from "lucide-react";
 import KronosAvatar from "@/components/KronosAvatar";
+import GeneratedImage from "@/components/GeneratedImage";
 
 interface KronosStudioProps {
   username: string;
@@ -15,6 +16,8 @@ interface StudioResult {
   code: string;
   framework: string;
   components: string[];
+  extraFiles?: {name: string; content: string}[];
+  images?: Array<{ prompt: string; displayPrompt: string }>;
 }
 
 export default function KronosStudio({ username, mode, onBack }: KronosStudioProps) {
@@ -24,7 +27,9 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError]         = useState("");
   const [copied, setCopied]       = useState(false);
-  const [tab, setTab]             = useState<"code" | "preview">("code");
+  const [tab, setTab]             = useState<"code" | "preview" | "images">("code");
+  const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<Array<{ prompt: string; displayPrompt: string; imageUrl?: string }>>([]);
   const abortRef                  = useRef<AbortController | null>(null);
   const textareaRef               = useRef<HTMLTextAreaElement>(null);
 
@@ -41,6 +46,7 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
     setIsLoading(true);
     setError("");
     setResult(null);
+    setActiveFile(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -59,8 +65,15 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
         code:       data.code       || "",
         framework:  data.framework  || "React + Tailwind",
         components: data.components || [],
+        extraFiles: data.extraFiles || [],
+        images:     data.images     || [],
       });
-      setTab("code");
+      setGeneratedImages([]);
+      setActiveFile("main");
+
+      if (data.images && data.images.length > 0) {
+        generateProjectImages(data.images);
+      }
     } catch (err) {
       if ((err as Error).name !== "AbortError") setError("Erro de conexão.");
     } finally {
@@ -74,6 +87,28 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
     setIsLoading(false);
   };
 
+  const generateProjectImages = async (images: Array<{ prompt: string; displayPrompt: string }>) => {
+    const results: Array<{ prompt: string; displayPrompt: string; imageUrl?: string }> = [];
+    for (const img of images) {
+      try {
+        const res = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: img.prompt }),
+        });
+        const data = await res.json();
+        if (data.imageUrl) {
+          results.push({ prompt: img.prompt, displayPrompt: img.displayPrompt, imageUrl: data.imageUrl });
+        } else {
+          results.push({ prompt: img.prompt, displayPrompt: img.displayPrompt });
+        }
+      } catch {
+        results.push({ prompt: img.prompt, displayPrompt: img.displayPrompt });
+      }
+    }
+    setGeneratedImages(results);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -81,21 +116,24 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
     }
   };
 
-  const handleCopy = () => {
-    if (!result?.code) return;
-    navigator.clipboard.writeText(result.code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  const handleCopy = async () => {
+    if (!result) return;
+    const codeToCopy = activeFile === "main" ? result.code : result.extraFiles?.find(f => f.name === activeFile)?.content;
+    if (!codeToCopy) return;
+    await navigator.clipboard.writeText(codeToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownload = () => {
-    if (!result?.code) return;
-    const blob = new Blob([result.code], { type: "text/plain;charset=utf-8" });
+    if (!result) return;
+    const codeToDownload = activeFile === "main" ? result.code : result.extraFiles?.find(f => f.name === activeFile)?.content;
+    if (!codeToDownload) return;
+    const blob = new Blob([codeToDownload], { type: "text/plain;charset=utf-8" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `kronos-studio-${goal.replace(/\s+/g, "-")}.tsx`;
+    a.download = activeFile === "main" ? `kronos-studio-${goal.replace(/\s+/g, "-")}.tsx` : (activeFile || "file.tsx");
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -106,6 +144,8 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
   const previewHtml = result?.code
     ? `<!DOCTYPE html><html><head><meta charset="utf-8"/><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-white">${extractJSX(result.code)}</body></html>`
     : "";
+  
+  const currentCode = activeFile === "main" ? result?.code : result?.extraFiles?.find(f => f.name === activeFile)?.content || "";
 
   return (
     <div className="flex flex-col h-full gap-0">
@@ -122,7 +162,7 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
         <div className="flex items-center gap-2 ml-auto">
           <KronosAvatar size={22} />
           <span className="text-xs font-semibold text-zinc-300 tracking-tight">Kronos Studio</span>
-          <span className="text-[10px] text-zinc-600 px-2 py-0.5 rounded-full border border-zinc-800">beta</span>
+          <span className="text-[10px] text-zinc-600 px-2 py-0.5 rounded-full border border-zinc-800">full-stack</span>
         </div>
       </div>
 
@@ -183,7 +223,7 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
       {isLoading && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-zinc-800/40 bg-zinc-900/30 mb-4">
           <KronosAvatar size={20} spinning />
-          <span className="text-xs text-zinc-500">Gerando código...</span>
+          <span className="text-xs text-zinc-500">Gerando código full-stack...</span>
           <div className="flex gap-1 ml-auto">
             {[0,1,2].map(i => (
               <span key={i} className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
@@ -199,7 +239,7 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
           {/* Tab bar + actions */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/60 shrink-0">
             <div className="flex gap-1">
-              {(["code", "preview"] as const).map((t) => (
+              {(["code", "preview", "images"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -209,13 +249,15 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
                       : "text-zinc-500 hover:text-zinc-300"
                   }`}
                 >
-                  {t === "code" ? "Código" : "Preview"}
+                  {t === "code" ? "Código" : t === "preview" ? "Preview" : "Imagens"}
                 </button>
               ))}
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
               {result.framework && <span className="px-2 py-0.5 rounded-full border border-zinc-800">{result.framework}</span>}
               {result.components.length > 0 && <span className="px-2 py-0.5 rounded-full border border-zinc-800">{result.components.length} componentes</span>}
+              {result.extraFiles && result.extraFiles.length > 0 && <span className="px-2 py-0.5 rounded-full border border-zinc-800">{result.extraFiles.length} arquivos</span>}
+              {result.images && result.images.length > 0 && <span className="px-2 py-0.5 rounded-full border border-zinc-800">{result.images.length} imagens</span>}
               <button
                 onClick={handleCopy}
                 className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 transition-all"
@@ -226,27 +268,76 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
               <button
                 onClick={handleDownload}
                 className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 transition-all"
-                title="Baixar .tsx"
+                title="Baixar arquivo"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto">
-            {tab === "code" ? (
-              <pre className="px-5 py-4 text-xs text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap break-words">
-                {result.code}
-              </pre>
-            ) : (
-              <iframe
-                srcDoc={previewHtml}
-                className="w-full h-full min-h-[400px] border-0"
-                sandbox="allow-scripts"
-                title="Preview"
-              />
+          {/* File tabs + Content */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Sidebar com arquivos */}
+            {result.extraFiles && result.extraFiles.length > 0 && (
+              <div className="w-48 border-r border-zinc-800/60 bg-zinc-900/30 overflow-auto shrink-0 hidden md:block">
+                <div className="p-2">
+                  <div className="text-[10px] text-zinc-600 px-2 py-1 mb-1">Arquivos do projeto</div>
+                  <button
+                    onClick={() => setActiveFile("main")}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all ${
+                      activeFile === "main" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    Principal
+                  </button>
+                  {result.extraFiles.map((file) => (
+                    <button
+                      key={file.name}
+                      onClick={() => setActiveFile(file.name)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all ${
+                        activeFile === file.name ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      <FileCode className="w-3.5 h-3.5" />
+                      {file.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Conteúdo */}
+            <div className="flex-1 overflow-auto">
+              {tab === "code" ? (
+                <pre className="px-5 py-4 text-xs text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap break-words">
+                  {currentCode || result.code}
+                </pre>
+              ) : tab === "preview" ? (
+                <iframe
+                  srcDoc={previewHtml}
+                  className="w-full h-full min-h-[400px] border-0"
+                  sandbox="allow-scripts"
+                  title="Preview"
+                />
+              ) : (
+                <div className="p-5">
+                  {result.images && result.images.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {result.images.map((img, idx) => (
+                        <GeneratedImage
+                          key={idx}
+                          prompt={img.displayPrompt}
+                          imageUrl={generatedImages[idx]?.imageUrl ?? ""}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-600">Nenhuma imagem sugerida para este projeto.</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Summary strip */}
@@ -265,8 +356,13 @@ export default function KronosStudio({ username, mode, onBack }: KronosStudioPro
             <Sparkles className="w-5 h-5 text-zinc-600" />
           </div>
           <p className="text-sm text-zinc-600 max-w-xs">
-            Descreva o que quer construir acima. O Kronos gera o código completo pronto para usar.
+            Descreva o que quer construir acima. O Kronos gera código full-stack completo, production-ready.
           </p>
+          {goal !== "landing page" && (
+            <p className="text-[10px] text-zinc-600 max-w-[280px]">
+              Apps web, dashboards, portais admin e apps mobile: com rotas, estado global, integração Supabase, formulários validados e micro-interações.
+            </p>
+          )}
         </div>
       )}
     </div>

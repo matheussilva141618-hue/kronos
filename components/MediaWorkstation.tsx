@@ -107,8 +107,8 @@ function VisualReportCard({ report }: { report: VisualReport }) {
 type Tab = "midias" | "visual" | "kronos";
 
 export default function MediaWorkstation({
-  media, visualReports, mode, recentTopics = [], onClose,
-  username, notificationBadge = 0, cognitiveStatus: _cognitiveStatus = null, onNotificationCount, onSelectNotification,
+  media, visualReports, onClose,
+  username, notificationBadge = 0, onNotificationCount, onSelectNotification,
 }: MediaWorkstationProps) {
   const [tab, setTab] = useState<Tab>(visualReports.length > 0 ? "visual" : "midias");
 
@@ -194,7 +194,9 @@ export default function MediaWorkstation({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <Image strokeWidth={1} className="w-8 h-8 text-zinc-700 mb-3" />
+              <span className="flex items-center justify-center">
+                <Image strokeWidth={1} className="w-8 h-8 text-zinc-700" aria-hidden="true" />
+              </span>
               <p className="text-[11px] text-zinc-600">Nenhuma mídia gerada ainda.</p>
               <p className="text-[10px] text-zinc-700 mt-1">Peça para gerar uma imagem ou documento.</p>
             </div>

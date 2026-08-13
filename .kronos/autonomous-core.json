@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "lastRunAt": "2026-07-27T07:25:51.027Z",
-  "cycles": 515,
-  "lastSignal": "knowledge_consolidation",
-  "lastDirective": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em ele ta certo?, manda um ddesafio para o gemini e no final quando ele mandar o resultado vc diz se ta certo ou errado ok ele contra vc topa?, import heapq  def find_k_closest_points(points, k):     \"\"\"     Encontra as k coordenadas mais próximas da origem (0, 0) em ordem crescente de distância.          Args:         points (list of tuple): Lista de tuplas (x, y) representando as coordenadas.         k (int): Número de pontos mais próximos a retornar.              Returns:         list of tuple: Os k pontos mais próximos ordenados por distância.     \"\"\"     if k > len(points):         raise ValueError(\"O valor de k não pode ser maior que o número total de pontos.\")          if k <= 0:         return []      # Max-heap para manter os k menores elementos.     # Como o heapq em Python é um min-heap, armazenamos tuplas na forma:     # (-distancia_ao_quadrado, -indice_original, ponto)     # O uso do índice original garante o critério de desempate estável (mantém a ordem original).     max_heap = []      for idx, (x, y) in enumerate(points):         # Usamos a distância ao quadrado para evitar o custo computacional da raiz quadrada.         dist_sq = x**2 + y**2                  # Como precisamos de um max-heap baseado na distância, invertemos o sinal.         # Para o desempate (menor índice original tem prioridade para sair por último),          # invertemos também o índice.         entry = (-dist_sq, -idx, (x, y))                  if len(max_heap) < k:             heapq.heappush(max_heap, entry)         else:             # Se o ponto atual for mais próximo que o ponto mais distante atualmente no heap,             # removemos o topo (o mais distante) e inserimos o novo.             if entry > max_heap[0]:                 heapq.heappushpop(max_heap, entry)      # Extrai os elementos do heap e os organiza em ordem crescente de distância.     # Como o heap é um max-heap invertido, ordenamos do maior para o menor valor invertido      # (o que equivale a ordenar do mais próximo ao mais distante).     result = sorted(max_heap, key=lambda item: (-item[0], -item[1]))          return [item[2] for item in result]  # ========================================== # Exemplo de Uso # ========================================== if __name__ == \"__main__\":     pontos_exemplo = [(1, 1), (1, 0), (0, 1), (2, 2), (-1, -1)]     k_valor = 3      print(f\"Pontos originais: {pontos_exemplo}\")     print(f\"Buscando os {k_valor} pontos mais próximos da origem...\")          resultado = find_k_closest_points(pontos_exemplo, k_valor)     print(f\"Resultado: {resultado}\").",
-  "confidence": 0.73,
+  "lastRunAt": "2026-08-12T01:53:23.009Z",
+  "cycles": 846,
+  "lastSignal": "stability_loop",
+  "lastDirective": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
+  "confidence": 0.71,
   "heuristics": {
     "contextWindow": 20,
     "reflectionDepth": 2,
@@ -13,51 +13,51 @@
   },
   "improvements": [
     {
-      "at": "2026-07-27T07:25:51.027Z",
+      "at": "2026-08-12T01:53:23.009Z",
+      "signal": "stability_loop",
+      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
+      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
+    },
+    {
+      "at": "2026-08-12T01:23:22.983Z",
+      "signal": "stability_loop",
+      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
+      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
+    },
+    {
+      "at": "2026-08-12T00:53:22.920Z",
+      "signal": "stability_loop",
+      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
+      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
+    },
+    {
+      "at": "2026-08-12T00:23:22.891Z",
+      "signal": "stability_loop",
+      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
+      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
+    },
+    {
+      "at": "2026-08-12T00:20:46.505Z",
       "signal": "knowledge_consolidation",
-      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em ele ta certo?, manda um ddesafio para o gemini e ",
+      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em diz pra eloe que ainda e um bebe, josue, diz pra ",
       "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
     },
     {
-      "at": "2026-07-27T07:25:16.027Z",
+      "at": "2026-08-12T00:20:15.095Z",
       "signal": "knowledge_consolidation",
-      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em ele ta certo?, manda um ddesafio para o gemini e ",
+      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em sabia que meu filho de 7 anos josue ainda bebezin",
       "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
     },
     {
-      "at": "2026-07-27T07:24:32.699Z",
+      "at": "2026-08-12T00:19:53.794Z",
       "signal": "knowledge_consolidation",
-      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em Resumo ExecutivoAlgoritmo de Dijkstra Otimizado e",
+      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em josue nene, sabia que meu filho de 7 anos josue a",
       "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
     },
     {
-      "at": "2026-07-24T11:58:59.376Z",
-      "signal": "stability_loop",
-      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
-      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
-    },
-    {
-      "at": "2026-07-24T11:28:59.352Z",
-      "signal": "stability_loop",
-      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
-      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
-    },
-    {
-      "at": "2026-07-24T10:58:59.282Z",
-      "signal": "stability_loop",
-      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
-      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
-    },
-    {
-      "at": "2026-07-24T10:28:59.244Z",
-      "signal": "stability_loop",
-      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
-      "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
-    },
-    {
-      "at": "2026-07-24T09:58:59.222Z",
-      "signal": "stability_loop",
-      "description": "Estabilidade operacional para o ecossistema: preservar consistência, observar sinais sutis e evoluir sem perder a base profissional com foco em aprendizado contínuo.",
+      "at": "2026-08-12T00:19:11.848Z",
+      "signal": "knowledge_consolidation",
+      "description": "Consolidação dinâmica para matheus: cruzar contextos recentes com memória persistente e sintetizar soluções preditivas com foco em oi nene, josue nene, sabia que meu filho de 7 ano",
       "patch": "- expandir a resposta cognitiva - Ajustar janela de contexto para 20 itens - Elevar profundidade de reflexão para 2 níveis - Definir limiar de autocorreção em 0.75 - Recalibrar cadência proativa para 15s"
     }
   ]

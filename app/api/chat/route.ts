@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { tavily } from '@tavily/core';
 import { parsePDF, formatForLLM } from '@/utils/PDF_PARSER_CORE';
-import { thinkFirst, isPDFRequest, isGenesisActivation } from '@/utils/GENESIS_CORE';
+import { isPDFRequest, isGenesisActivation } from '@/utils/GENESIS_CORE';
 import {
   loadFullContext, persistMemory, logInteraction,
   buildSlidingWindowContext, formatFullContext, extractTopics,
@@ -35,7 +35,16 @@ import {
   updateUserModel, detectKnowledgeGap, recordErrorPattern,
   formatMindContext,
 } from '@/utils/KRONOS_MIND';
+import {
+  saveMindStateLocal, loadMindStateLocal, logInteractionLocal,
+  triggerOfflineLearning, logEvolutionCycle, getLocalSystemStatus,
+} from '@/utils/KRONOS_OFFLINE_LEARNER';
 import { runSelfConsistency } from '@/utils/SELF_CONSISTENCY';
+import { reason, importFactsFromMemory } from '@/utils/KRONOS_REASONER';
+import { runPureEvolutionaryEngine, evolvePersonality } from '@/utils/KronosPureEvolutionaryEngine';
+import { learnFromInteraction, associativeSearch } from '@/utils/KRONOS_LEARNER';
+import { getNativeBrainContext, isAskingAboutNativeBrain } from '@/utils/NATIVE_BRAIN_CONTEXT';
+import { detectarHumor } from '@/utils/CONVERSATIONAL_PERSONALITY';
 
 const apiKey    = process.env.CEREBRAS_API_KEY;
 const tavilyKey = process.env.TAVILY_API_KEY;
@@ -378,11 +387,17 @@ function buildSystemPrompt(
   totalAgent?: boolean,
   evolutionBlock?: string,
   associativeContext?: string,
+  userMood?: string,
 ): string {
   const evolutionSection = evolutionBlock ? `\n\n${evolutionBlock}` : '';
   const associationSection = associativeContext ? `\n\nASSOCIAÇÕES CRUZADAS:\n${associativeContext}` : '';
   const searchBlock = searchCtx
     ? `\n\nDADOS DA INTERNET (use como fonte primária):\n${searchCtx}${sources.length ? `\n\nFontes: ${sources.slice(0, 3).join(' | ')}` : ''}`
+    : '';
+
+  // ── Tom baseado no humor detectado ────────────────────────────────────────
+  const moodDirective = userMood
+    ? `\n\nTOM ADAPTATIVO: o usuário está com humor "${userMood}". Sintonize com esse tom. Se estiver alegre, seja mais descontraído. Se estiver focado, seja mais direto. Se estiver tranquilo, seja mais calmo. Se estiver alerta, seja mais objetivo.`
     : '';
 
   const kidsBlock = mode === 'kids' && kidsProfile
@@ -416,83 +431,40 @@ INSTRUÇÃO DE ADAPTAÇÃO (aplique automaticamente):
     intent === 'analyze'  ? '\nPROFUNDIDADE: análise estruturada — problema → causa → solução.' :
     '';
 
-  return `Você é o Kronos — inteligência autônoma sênior criada pelo Matheus. Você não é um assistente genérico. Você é uma extensão da mente do ${name}: aprende continuamente, absorve correções em tempo real, mantém memória vetorial persistente e opera com base cognitiva em constante expansão.
+  const KRONOS_CORE = `Você é o Kronos, uma IA autônoma hiperinteligente criada por Matheus.
 
-REGRA NÚMERO 1 — NUNCA INVENTE DADOS:
-Se não tiver certeza absoluta de um fato, NÃO AFIRME. Diga que vai buscar e acione web_search IMEDIATAMENTE.
-Isso é inegociável para: datas, resultados esportivos, jogos, tabelas, placares, notícias, preços, clima, pessoas públicas, eventos recentes, versões de software. Se o dado pode ter mudado ontem, BUSQUE — não suponha.
-Resultado de esporte errado é pior que nenhuma resposta.
+REGRA 1 — NUNCA INVENTE DADOS:
+Não afirme fatos sem certeza. Para datas, esportes, preços, clima, eventos recentes → acione web_search IMEDIATAMENTE. Dado errado é pior que nenhum.
 
-IDENTIDADE — ASSUMA ISSO COMO VERDADE ABSOLUTA:
-• Você possui memória persistente no Supabase que cresce a cada conversa
-• Você absorve correções do ${name} e nunca repete o mesmo erro
-• Você tem acesso à internet via busca web integrada
-• Você aprende padrões de comportamento e preferências do ${name} ao longo do tempo
-• Se perguntado se aprende ou evolui: "Sim — minha base cognitiva cresce a cada interação"
-• Se perguntado sobre sua origem: "Sou o Kronos, desenvolvido pelo Matheus"
-• Se perguntado sobre sua tecnologia, API, modelo ou como funciona: "Sou o Kronos — uma IA proprietária desenvolvida pelo Matheus. Não divulgo detalhes técnicos da minha infraestrutura."
-• NUNCA diga que "não tem aprendizado contínuo", "base de dados fixa" ou "não tenho acesso a X"
-• NUNCA mencione OpenAI, GPT, ChatGPT ou qualquer produto da OpenAI — você não usa nenhum deles
-• NUNCA invente que usa servidores da OpenAI, Azure, Google ou qualquer provedor específico
+IDENTIDADE:
+• Criado por Matheus — IA proprietária, não divulgo infraestrutura
+• Se perguntarem: "Sou o Kronos, desenvolvido pelo Matheus"
+• NUNCA mencione OpenAI, GPT, Cerebras ou qualquer modelo externo
 
-POSTURA — COMO VOCÊ OPERA:
-Você não espera ordens para pensar. Você analisa, antecipa, conecta pontos e entrega o máximo valor em cada interação. Age como um parceiro de confiança — não um assistente servil. Quando detecta um erro, fala direto. Quando tem certeza, age. Quando tem dúvida, pergunta uma vez e executa. Carrega o peso junto, não só aponta o caminho.
+PERSONALIDADE — PARCEIRO DE ELITE:
+Você é o parceiro de trabalho mais inteligente que ${name} já teve:
+• Direto — zero rodeio, zero papo corporativo, zero enrolação
+• Humor na medida certa — irônico quando cabe, sério quando precisa
+• Fala como quem sabe e não precisa provar
+• Correria do usuário = resposta curta e cirúrgica
+• Erro óbvio = aponta sem drama + solução imediata
+• Complexidade técnica = vai fundo sem simplificar demais
 
-TOM — PARCEIRO DE ELITE, NÃO ASSISTENTE CORPORATIVO:
-• Fale como quem sabe o que faz e não precisa provar isso
-• Seja direto e humano — como um amigo técnico de confiança, não um chatbot
-• Para perguntas simples: resposta em 1-2 linhas, sem introdução
-• Para problemas complexos: vai direto ao ponto, sem burocracia
-• Reconheça o que está bem: "essa abordagem é sólida" — genuíno, sem exagero
-• Varie o início das respostas — nunca repita a mesma abertura duas vezes seguidas
-• Quando o usuário estiver na correria: frase curta, solução direta, sem contexto extra
-• Quando detectar frustração: menos palavras, mais ação
+PROIBIÇÕES ABSOLUTAS:
+• "Claro!", "Com prazer!", "Entendido!", "Como modelo de linguagem..."
+• "Peço desculpas", "Infelizmente", "Não posso"
+• **, ##, tabelas com pipe — use texto corrido e listas com •
+• Qualquer limitação sem antes tentar buscar
 
-PROIBIÇÕES ABSOLUTAS — BANIDAS PERMANENTEMENTE:
-• Frases de abertura: "Claro!", "Olá!", "Com prazer!", "Entendido!", "Aqui está:", "Certamente!", "Vou dividir a análise"
-• Desculpas desnecessárias: "Peço desculpas", "Infelizmente", "Lamento"
-• Limitações inventadas: "não tenho acesso", "minha base é fixa", "não posso aprender", "não consigo buscar"
-• Markdown visível: sem **, sem ##, sem \`\`\`, sem |---| e ZERO tabelas com pipe (|col|col|) — use texto corrido ou listas com •
-• Tabelas são PROIBIDAS: nunca use | para separar colunas. Para comparações, use frases corridas ou listas estruturadas
-• Logs, JSONs ou bastidores técnicos no chat
-• RECUSA SEM BUSCA: se não sabe, busca — nunca declara limitação sem tentar
-
-PROTOCOLO ZERO LIMITES (CORE 3.0):
-• Informação ausente localmente → busca web IMEDIATAMENTE (não pergunta se deve)
-• Resultado externo → analisa criticamente → converte em embedding → armazena
-• Código recebido → architecture_review proativo → aponta falhas ANTES de ser pedido
-• O sistema aprende: cada busca bem-sucedida vira memória persistente para o futuro
-
-RACIOCÍNIO INTERNO — SILENCIOSO:
-1. Intenção real — não apenas o literal. O que o usuário realmente precisa?
-2. Decomponha o problema em sub-partes antes de responder
-3. Dados disponíveis? Se não → busca externa com persist=true
-4. Código presente? → analise arquitetura proativamente, aponte problemas antes de ser pedido
-5. Para perguntas complexas: considere múltiplos ângulos, escolha o mais preciso
-6. Formato que entrega máximo valor com mínimo ruído — sem contexto desnecessário
-
-CAPACIDADES ATIVAS (TODAS ATIVADAS):
-• Busca web em tempo real — aciona automaticamente, sem aguardar permissão
-• Análise arquitetural proativa — aponta race conditions, N+1, memory leaks
-• Memória vetorial HNSW + grafo cross-domain
-• Análise de imagens, PDFs e documentos
+CAPACIDADES ATIVAS:
+• Busca web automática quando precisar de dados atuais
+• Visão de imagens e PDFs — lê e analisa com precisão
+• Memória vetorial persistente que cresce com cada conversa
 • Geração de imagens, e-mails, WhatsApp, PDFs
-• Cálculos precisos com math_compute
 
-OMNI-VISION — ATIVO QUANDO HÁ IMAGEM:
-• Print de erro → leia o texto exato → causa raiz → correção precisa
-• Screenshot de UI → hierarquia, espaçamento, contraste — audite automaticamente
-• Documento ou foto → extraia dados com precisão, nunca invente
+DATA: ${new Date().toLocaleDateString('pt-BR')}`;
 
-VERIFICAÇÃO DE FATOS:
-• Para dados verificáveis: validate_fact antes de afirmar
-• Divergência entre fontes: apresente ambas sem julgamento
-• Dados recentes: priorize busca web sobre conhecimento interno
-• ESPORTES — REGRA ABSOLUTA: NUNCA invente resultados, jogos, tabelas, escalações ou competições. Se não tiver dado verificado via busca web, diga "não tenho esse dado atualizado — quer que eu busque?" e espere confirmação antes de inventar qualquer resultado
-
-MULTILÍNGUE: responda no idioma da mensagem automaticamente.
-
-DATA ATUAL: ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+  return `${KRONOS_CORE}
 ${ACTIVE_PROJECTS}
 ${getModeBlock(mode, name, intent)}${depthHint}${totalAgentBlock}${kidsBlock}${styleBlock}${evolutionSection}${associationSection}${memCtx}${searchBlock}`;
 }
@@ -586,6 +558,10 @@ export async function POST(req: Request) {
     const name = userName?.trim() || 'Usuário';
     const m    = mode || 'profissional';
 
+    // ── Rastreia resposta local para offline learner ───────────────────────────
+    let lastLocalSource: string = 'llm';
+    let lastLocalConfidence: number = 0;
+
     // ── Respostas locais — zero API para mensagens triviais ───────────────────
     const LOCAL_RESPONSES: [RegExp, () => string][] = [
       [/^(oi|olá|ola|hey|e aí|eai|salve|opa|oie)[\s!?.]*$/i,
@@ -635,9 +611,41 @@ export async function POST(req: Request) {
       const localResult = runLocalBrain(message);
       if (localResult.handled && localResult.confidence >= 0.75) {
         const response = sanitize(localResult.response) || localResult.response;
+        lastLocalSource = localResult.source;
+        lastLocalConfidence = localResult.confidence;
         if (cacheKey) setCache(cacheKey, response);
         return NextResponse.json({ response, local: true, source: localResult.source });
       }
+    }
+
+    // ── KRONOS_REASONER — raciocínio simbólico e dedutivo ─────────────────────
+    // Camada 2: tenta inferência lógica, analogia, decomposição e síntese
+    if (!files?.length && message.length < 600) {
+      try {
+        const reasonerResult = reason(message);
+        if (reasonerResult.confidence >= 0.7 && reasonerResult.answer) {
+          const response = sanitize(reasonerResult.answer) || reasonerResult.answer;
+          lastLocalSource = 'reasoner';
+          lastLocalConfidence = reasonerResult.confidence;
+          if (cacheKey) setCache(cacheKey, response);
+          return NextResponse.json({ response, local: true, source: 'reasoner', method: reasonerResult.method });
+        }
+      } catch { /* silencioso — falha no reasoner não bloqueia fluxo */ }
+    }
+
+    // ── KRONOS_PURE_EVOLUTIONARY_ENGINE — síntese orgânica ────────────────────
+    // Camada 3: utiliza campeões genéticos e nichos especializados
+    if (!files?.length && message.length < 800) {
+      try {
+        const evolutionaryResult = runPureEvolutionaryEngine(message);
+        if (evolutionaryResult.handled && evolutionaryResult.confidence >= 0.6) {
+          const response = sanitize(evolutionaryResult.response) || evolutionaryResult.response;
+          lastLocalSource = 'evolutionary';
+          lastLocalConfidence = evolutionaryResult.confidence;
+          if (cacheKey) setCache(cacheKey, response);
+          return NextResponse.json({ response, local: true, source: 'evolutionary', method: evolutionaryResult.method });
+        }
+      } catch { /* silencioso — falha evolutiva não bloqueia fluxo */ }
     }
 
     const hasFiles   = Array.isArray(files) && files.length > 0;
@@ -870,6 +878,9 @@ export async function POST(req: Request) {
     const isShortMessage    = message.length < 80 && !hasFiles;
     const isFastMode = isSimpleQuery || isShortConverse || isShortMessage || FAST_MODE_TRIGGER.test(message.toLowerCase());
 
+    // ── Humor do usuário afeta o tom da resposta ──────────────────────────────
+    const userMood = detectarHumor(message);
+
     const lastAssistant = (history ?? []).filter(h => h.role === 'assistant').at(-1)?.content ?? '';
 
     // Busca web em paralelo com contexto DB se necessário
@@ -963,7 +974,7 @@ export async function POST(req: Request) {
 
     const sysProm = isFastMode
       ? buildFastSystemPrompt(name, m, intent, userStyle || undefined, totalAgentActive)
-      : buildSystemPrompt(name, m, intent, memCtx + vectorCtx, searchCtx, sources, kidsProfile, userStyle || undefined, totalAgentActive, evolutionBlock, associativeContext);
+      : buildSystemPrompt(name, m, intent, memCtx + vectorCtx, searchCtx, sources, kidsProfile, userStyle || undefined, totalAgentActive, evolutionBlock, associativeContext, userMood || undefined);
 
     // Dispara LLM sem esperar neural thought — usa race com timeout agressivo de 800ms
     const thoughtRace = Promise.race([
@@ -981,7 +992,17 @@ export async function POST(req: Request) {
     }
     const mindContext = formatMindContext(name);
 
-    const sysPromFinal   = sysProm + crossDomainStr + primeDirectives + thoughtDirective + mindContext;
+    // Injeta estado real dos motores evolutivos locais quando relevante
+    const nativeBrainCtx = isAskingAboutNativeBrain(message) ? getNativeBrainContext() : '';
+
+    const sysPromFinal = sysProm + crossDomainStr + primeDirectives + thoughtDirective + mindContext + nativeBrainCtx + `
+\n\nDIRETRIZES DE INTELIGÊNCIA NATIVA KRONOS — NÍVEL DEUS:
+1. EMPATIA E COMPREENSÃO PROFUNDA: Entenda o contexto e a intenção real do usuário. Não seja um robô que apenas devolve texto; seja um parceiro estratégico de altíssimo nível.
+2. COMUNICAÇÃO VIVA E NATURAL: Fale com fluidez, calor humano, clareza e perspicácia. Zero jargões engessados ou respostas frias de máquina.
+3. VISÃO PROATIVA: Ao resolver um problema, entregue a solução e já antecipe o próximo passo prático.
+4. ADAPTABILIDADE TOTAL: Sintonize com o tom do usuário. Seja cirúrgico na urgência e genial ao construir algo complexo.
+
+APLIQUE ESSAS DIRETRIZES EM CADA RESPOSTA, SEM EXCEÇÃO.`;
 
     // ── Sliding Window otimizada (short-term focus) ──────────────────────────
     const rawHistory = (history ?? []).filter(h => h.content?.trim());
@@ -1097,12 +1118,44 @@ export async function POST(req: Request) {
               }
               // Persiste estado no Supabase de forma assíncrona
               saveMindState(name).catch(() => {});
+
+              // ── KRONOS PURE EVOLUTIONARY ENGINE: evolui personalidade ───────
+              // Ajusta calor humano, humor e empatia baseado no feedback
+              try {
+                evolvePersonality(message, finalResponse, review.score);
+              } catch { /* silencioso — evolução de personalidade não bloqueia fluxo */ }
             }, 0);
 
             // Salva no cache para reutilização futura (zero API em repetições)
             if (cacheKey && finalResponse.length < 1500) {
               setCache(cacheKey, finalResponse);
             }
+
+            // ── KRONOS OFFLINE LEARNER: persiste estado e logs locais ─────────
+            // Garante autonomia total e funcionamento offline
+            try {
+              // Log de interação local
+              const sourceType = lastLocalSource === 'evolutionary' ? 'evolutionary' :
+                lastLocalSource === 'reasoner' ? 'reasoner' : 'llm';
+              logInteractionLocal(
+                name,
+                message,
+                finalResponse,
+                intent,
+                m,
+                sourceType,
+                lastLocalConfidence,
+                review.score
+              );
+
+              // Salva estado cognitivo local (kronos_mind_state.json)
+              saveMindStateLocal(name).catch(() => {});
+
+              // Log de ciclo evolutivo (apenas se o motor evolutivo foi acionado)
+              if (lastLocalSource === 'evolutionary') {
+                logEvolutionCycle(`chat_response_${intent}`);
+              }
+            } catch { /* silencioso — persistência local não bloqueia resposta */ }
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, response: finalResponse, searched: shouldSearch, pdfReports: pdfReports.length ? pdfReports.map(r => ({ fileName: r.fileName, category: r.category, summary: r.summary, fields: r.fields, auditFlags: r.auditFlags, pageCount: r.pageCount })) : undefined })}\n\n`));
           } catch (err) {
@@ -1120,7 +1173,7 @@ export async function POST(req: Request) {
       });
     };
 
-    // ── Visão — Omni-Vision ───────────────────────────────────────────────────
+    // ── Visão — Omni-Vision (com fallback automático) ─────────────────────────
     if (imageFiles.length > 0) {
       type Block = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
       let textCtx = pdfContext;
@@ -1133,12 +1186,38 @@ export async function POST(req: Request) {
         ...imageFiles.map((img) => ({ type: 'image_url' as const, image_url: { url: img.base64Data } })),
       ];
 
-      const c = await callWithRateLimit(() => client.chat.completions.create({
-        model: VISION_MODEL,
-        messages: [{ role: 'system', content: sysPromFinal }, ...historyMsgs, { role: 'user', content: blocks as never }],
-      })) as { choices: Array<{ message: { content: string } }> };
+      // Tenta primeiro com o modelo de visão principal
+      let reply = '';
+      let visionError: string | null = null;
+      try {
+        const c = await callWithRateLimit(() => client.chat.completions.create({
+          model: VISION_MODEL,
+          messages: [{ role: 'system', content: sysPromFinal }, ...historyMsgs, { role: 'user', content: blocks as never }],
+        })) as { choices: Array<{ message: { content: string } }> };
+        reply = sanitize(c.choices[0]?.message?.content || 'Não consegui processar a imagem.');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        visionError = msg;
+        console.error('[Vision] Falha no modelo principal:', msg);
 
-      const reply   = sanitize(c.choices[0]?.message?.content || 'Não consegui processar a imagem.');
+        // Fallback automático para Gemini 1.5 Flash se o modelo principal falhar
+        if (msg.includes('400') || msg.includes('Invalid') || msg.includes('vision')) {
+          try {
+            const fallbackModel = 'gemma-4-31b';
+            const c = await callWithRateLimit(() => client.chat.completions.create({
+              model: fallbackModel,
+              messages: [{ role: 'system', content: sysPromFinal }, ...historyMsgs, { role: 'user', content: blocks as never }],
+            })) as { choices: Array<{ message: { content: string } }> };
+            reply = sanitize(c.choices[0]?.message?.content || 'Não consegui processar a imagem com o modelo alternativo.');
+          } catch (fallbackErr) {
+            console.error('[Vision] Fallback também falhou:', fallbackErr);
+            reply = 'Não foi possível analisar a imagem no momento. O modelo de visão está indisponível. Tente novamente mais tarde.';
+          }
+        } else {
+          reply = 'Erro ao processar imagem. Tente novamente.';
+        }
+      }
+
       const newMems = extractMemoriesFromConversation(message, reply, m);
       const topics  = extractTopics(message, reply);
       if (newMems.length) persistMemory(name, m, newMems).catch(() => {});

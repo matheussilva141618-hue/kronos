@@ -48,6 +48,8 @@ const config: Config = {
   plugins: [
     require("@tailwindcss/typography"),
   ],
+  // Safe area para iOS
+  safelist: ['pb-safe'],
 };
 
 export default config;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Mail, Image, BookOpen, Sparkles, MessageCircle, Wrench, Bug, Activity, Zap } from "lucide-react";
+import { Mail, BookOpen, Sparkles, MessageCircle, Wrench, Bug, Activity, Zap } from "lucide-react";
 
 export interface Command {
   id:          string;
@@ -18,7 +18,7 @@ export const COMMANDS: Command[] = [
   { id: "/debug",     label: "/debug",     description: "Debugar código ou fluxo ativo",       icon: <Bug           strokeWidth={1.5} className="w-4 h-4" />, fill: "text-orange-400",  group: "ação" },
   { id: "/status",    label: "/status",    description: "Status do projeto e última atividade", icon: <Activity      strokeWidth={1.5} className="w-4 h-4" />, fill: "text-emerald-400", group: "ação" },
   { id: "/dossie",    label: "/dossie",    description: "Buscar nos seus documentos",           icon: <BookOpen      strokeWidth={1.5} className="w-4 h-4" />, fill: "text-amber-400",   group: "ação" },
-  { id: "/imagem",    label: "/imagem",    description: "Gerar imagem com IA",                 icon: <Image         strokeWidth={1.5} className="w-4 h-4" />, fill: "text-purple-400",  group: "ação" },
+  { id: "/imagem",    label: "/imagem",    description: "Gerar imagem com IA",                 icon: <Sparkles      strokeWidth={1.5} className="w-4 h-4" />, fill: "text-purple-400",  group: "ação" },
   // Comunicação
   { id: "/email",     label: "/email",     description: "Abrir formulário de e-mail",          icon: <Mail          strokeWidth={1.5} className="w-4 h-4" />, fill: "text-blue-400",    group: "comunicação" },
   { id: "/whatsapp",  label: "/whatsapp",  description: "Enviar mensagem WhatsApp",            icon: <MessageCircle strokeWidth={1.5} className="w-4 h-4" />, fill: "text-emerald-400", group: "comunicação" },

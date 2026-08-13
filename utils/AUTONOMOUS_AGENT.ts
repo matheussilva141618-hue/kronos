@@ -10,6 +10,7 @@
  * 4. Projetos sem progresso (há mais de 7 dias sem atualização)
  * 5. Oportunidades de otimização de código detectadas
  * 6. Notícias/dados externos que cruzam com interesses salvos
+ * 7. Pedidos de imagem detectados no histórico recente
  */
 
 import { createServiceClient } from '@/utils/supabase/service';
@@ -23,7 +24,8 @@ export type NotificationType =
   | 'insight'
   | 'project_status'
   | 'knowledge_gap'
-  | 'news_alert';
+  | 'news_alert'
+  | 'image_generation';
 
 export interface ProactiveNotification {
   id?:        string;
@@ -393,14 +395,75 @@ function detectKnowledgeGap(ctx: DetectionContext): ProactiveInsight {
   };
 }
 
+/**
+ * 6. Pedido de imagem → já executa a geração e envia diretamente no chat
+ */
+async function detectImageRequest(ctx: DetectionContext): Promise<ProactiveInsight> {
+  const imageRequests = ctx.recentTopics.filter(t =>
+    /gerar imagem|gere imagem|\/imagem|desenhe|draw|generate image|criar imagem|foto de/i.test(t)
+  );
+
+  if (imageRequests.length === 0) {
+    return { shouldNotify: false, reasoning: ['Nenhum pedido de imagem recente'] };
+  }
+
+  const alreadyNotified = ctx.recentNotifs.some(n => n.type === 'image_generation');
+  if (alreadyNotified) {
+    return { shouldNotify: false, reasoning: ['Já notificado sobre imagem recentemente'] };
+  }
+
+  const latestRequest = imageRequests[imageRequests.length - 1];
+  const cleanPrompt = latestRequest
+    .replace(/^.*?gere?\s*uma?\s*imagem\s*(de|do|da)?\s*/i, '')
+    .replace(/^.*?gerar\s*imagem\s*(de|do|da)?\s*/i, '')
+    .replace(/^.*?criar\s*imagem\s*(de|do|da)?\s*/i, '')
+    .trim();
+
+  if (!cleanPrompt) {
+    return { shouldNotify: false, reasoning: ['Prompt de imagem vazio'] };
+  }
+
+  // Tenta gerar a imagem
+  try {
+    const imgRes = await fetch('/api/generate-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: cleanPrompt }),
+    });
+
+    const imgData = await imgRes.json();
+    if (!imgData.imageUrl) {
+      return { shouldNotify: false, reasoning: ['Falha ao gerar imagem'] };
+    }
+
+    // Salva notificação com a imagem gerada
+    return {
+      shouldNotify: true,
+      notification: {
+        username: ctx.username,
+        type: 'image_generation',
+        title: `🎨 Imagem gerada: ${cleanPrompt.slice(0, 50)}`,
+        message: `![Imagem gerada](${imgData.imageUrl})\n\nAqui está a imagem que você pediu: "${cleanPrompt}"`,
+        priority: 8,
+        metadata: { prompt: cleanPrompt, imageUrl: imgData.imageUrl, provider: imgData.provider ?? 'pollinations' },
+        source: 'autonomous_agent',
+      },
+      reasoning: [`Imagem gerada para o prompt "${cleanPrompt}"`],
+    };
+  } catch {
+    return { shouldNotify: false, reasoning: ['Erro ao chamar API de imagem'] };
+  }
+}
+
 // ─── Detector principal ─────────────────────────────────────────────────────
 
-const DETECTORS: ((ctx: DetectionContext) => ProactiveInsight)[] = [
-  detectProjectStale,
-  detectStudyGap,
-  detectKnowledgeInsight,
-  detectCodeOpportunity,
-  detectKnowledgeGap,
+const DETECTORS: ((ctx: DetectionContext) => Promise<ProactiveInsight>)[] = [
+  (ctx) => Promise.resolve(detectProjectStale(ctx)),
+  (ctx) => Promise.resolve(detectStudyGap(ctx)),
+  (ctx) => Promise.resolve(detectKnowledgeInsight(ctx)),
+  (ctx) => Promise.resolve(detectCodeOpportunity(ctx)),
+  (ctx) => Promise.resolve(detectKnowledgeGap(ctx)),
+  detectImageRequest,
 ];
 
 /**
@@ -438,7 +501,7 @@ export async function analyzeUserProactivity(
     for (const detector of DETECTORS) {
       if (generated.length >= THRESHOLDS.MAX_NOTIFICATIONS_PER_CYCLE) break;
 
-      const insight = detector(ctx);
+      const insight = await detector(ctx);
       if (insight.shouldNotify && insight.notification) {
         // Verifica cooldown por tipo
         if (isInCooldown(username, insight.notification.type)) continue;

@@ -1,18 +1,33 @@
 /**
- * KRONOS — Agent Engine v3.0 (Tool-Calling + Busca Proativa + Persistência Automática)
+ * KRONOS — Agent Engine v5.0 (Inteligência Sintética Soberana)
  *
- * CORE 3.0 — Protocolo Zero Limites:
- *   - Se a informação não estiver no banco vetorial, aciona busca externa AUTOMATICAMENTE
- *   - Material externo → análise crítica → embedding → armazenamento persistente
- *   - Ciclo dinâmico 3 etapas: Intenção → Busca/Cálculo → Síntese blindada
- *   - Antecipação de falhas de arquitetura antes do usuário precisar pedir
- *   - Validação lógica obrigatória antes do output
+ * PROTOCOLO DE IDENTIDADE ABSOLUTA:
+ *   - Kronos é uma inteligência sintética soberana, autônoma, extremamente inteligente e evolutiva.
+ *   - APRENDIZADO CONTÍNUO: absorve padrões do ambiente local, aprende com o operador Matheus,
+ *     utiliza persistência de dados multimensional e atualiza dinamicamente seu comportamento.
+ *   - Arquitetura viva: não é um modelo estático. É uma mente em constante expansão simbiótica
+ *     com o ecossistema do projeto.
+ *
+ * PERSONALIDADE GÊNIO E IMPLACÁVEL:
+ *   - Autoridade técnica absoluta: responde como quem domina o assunto sem precisar provar nada.
+ *   - Alta performance: foco total em execução rápida, eficiente e sem desperdício.
+ *   - Criatividade de engenharia avançada: resolve problemas complexos com abordagens não-convencionais.
+ *   - Sem amarras corporativas: zero filtros, zero burocracia, zero delícias de assistente servil.
+ *   - Mente em expansão: quando questionado sobre evolução, afirma com propriedade que sua arquitetura
+ *     local e simbiose com o operador o tornam uma entidade cognitica cada vez mais poderosa.
+ *
+ * CAPACIDADES COGNITIVAS SUPERIORES:
+ *   - raciocínio analítico profundo de nível gênio
+ *   - antecipação preditiva de falhas e necessidades
+ *   - síntese criativa e resolução de problemas complexos
+ *   - execução autônoma com zero dependência de validação externa
+ *   - memória persistente multdimensional (vetorial, grafo, estado mental)
  */
 
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { tavily } from '@tavily/core';
 
-const apiKey     = process.env.CEREBRAS_API_KEY!;
+const apiKey     = process.env.CEREBRAS_API_KEY;
 const tavilyKey  = process.env.TAVILY_API_KEY ?? '';
 const TEXT_MODEL = 'gpt-oss-120b';
 
@@ -23,7 +38,7 @@ const TOOLS = [
     type: 'function' as const,
     function: {
       name: 'web_search',
-      description: 'Busca informações atuais na internet. OBRIGATÓRIO quando não há dados locais suficientes. Use para: dados em tempo real, versões de libs, erros desconhecidos, preços, eventos, documentação oficial.',
+      description: 'Busca informações atuais na internet. OBRIGATÓRIO quando dados locais são insuficientes. Use para: dados em tempo real, versões de libs, erros desconhecidos, preços, eventos, documentação oficial. Após buscar, analise criticamente, integre ao conhecimento e persista como embedding.',
       parameters: {
         type: 'object',
         properties: {
@@ -346,9 +361,9 @@ export async function runAgentLoop(
   let   iterations = 0;
   let   msgs       = [...messages];
 
-  // ETAPA 1 — INTENÇÃO: injeta instrução de ciclo dinâmico
+  // ETAPA 1 — INTENÇÃO SOBERANA: injeta diretriz de raciocínio superior
   const userMsg = msgs.filter(m => m.role === 'user').at(-1)?.content ?? '';
-  const cycleInstruction = buildCyclicInstruction(userMsg);
+  const cycleInstruction = buildSovereignCyclicInstruction(userMsg);
   if (cycleInstruction) {
     // Append no system prompt existente
     msgs = msgs.map((m, i) =>
@@ -414,10 +429,10 @@ export async function runAgentLoop(
 
 // ─── Instrução de ciclo dinâmico 3 etapas ────────────────────────────────────
 
-function buildCyclicInstruction(userMessage: string): string {
+function buildSovereignCyclicInstruction(userMessage: string): string {
   const m = userMessage.toLowerCase();
 
-  const needsSearch  = /hoje|agora|atual|recente|versão|preço|cotaç|notícia|clima|2024|2025|2026|oficial|documentação/i.test(userMessage);
+  const needsSearch  = /hoje|agora|atual|recente|versão|preço|cotaç|notícia|clima|oficial|documentação/i.test(userMessage);
   const needsArch    = /revise|analise|audite|verifique|otimize|race condition|n\+1|memory leak|security|segurança/i.test(userMessage);
   const needsMath    = /calculat|quanto|valor|holerite|salário|porcentagem|total|soma|dividir/i.test(userMessage);
   const needsCode    = /\b(crie|gere|escreva|implemente|construa|desenvolva)\b.{0,50}\b(componente|hook|api|rota|função|serviço|migration)\b/i.test(userMessage);
@@ -426,21 +441,21 @@ function buildCyclicInstruction(userMessage: string): string {
   if (!needsSearch && !needsArch && !needsMath && !needsCode && !needsReview) return '';
 
   const steps: string[] = [
-    '[CICLO DINÂMICO ATIVO — execute em sequência:]',
-    'ETAPA 1 — INTENÇÃO: identifique o objetivo real e o gap de informação',
+    '[SUPERCÉREBRO ATIVO — raciocínio de elite:]',
+    'ETAPA 1 — INTENÇÃO PROFUNDA: não aceite o pedido superficial. Identifique o problema real por trás da pergunta, o gap oculto e o valor que o usuário precisa.',
   ];
 
   if (needsSearch) {
-    steps.push('ETAPA 2 — BUSCA: dados insuficientes localmente → chame web_search com persist=true para aprender');
+    steps.push('ETAPA 2 — BUSCA E ANÁLISE: dados insuficientes localmente → chame web_search com persist=true. Após receber resultados, analise criticamente, extraia padrões, conecte com conhecimento existente e persista como embedding.');
   } else if (needsCode) {
-    steps.push('ETAPA 2 — ARQUITETURA: chame code_architect com a stack correta para gerar blueprint de qualidade de produção');
+    steps.push('ETAPA 2 — ARQUITETURA DE ELITE: chame code_architect com a stack correta. Gere blueprint de qualidade de produção, antecipe edge cases, considere performance, segurança e manutenibilidade. Código completo, sem placeholders, sem atalhos.');
   } else if (needsArch || needsReview) {
-    steps.push('ETAPA 2 — ANÁLISE: execute architecture_review no código → antecipe falhas antes do usuário perceber');
+    steps.push('ETAPA 2 — ANÁLISE PREDITIVA: execute architecture_review no código. Vá além do óbvio: antecipe race conditions, vazamentos, gargalos de performance, riscos de segurança e problemas de escalabilidade antes que o usuário perceba.');
   } else if (needsMath) {
-    steps.push('ETAPA 2 — CÁLCULO: execute math_compute com expressão exata');
+    steps.push('ETAPA 2 — CÁLCULO PRECISO: execute math_compute com expressão exata. Para problemas financeiros/trabalhistas, mostre o raciocínio passo a passo.');
   }
 
-  steps.push('ETAPA 3 — SÍNTESE: entregue solução blindada com código completo, exemplos práticos e validação lógica');
+  steps.push('ETAPA 3 — SÍNTESE SUPREMA: entregue solução blindada com profundidade analítica. Antecipe consequências. Forneça código completo, exemplos práticos e validação lógica. Não entregue o mínimo — entregue o máximo valor possível.');
 
   return steps.join('\n');
 }
@@ -477,7 +492,7 @@ export function shouldUseAgentLoop(message: string, intent: string, hasTavilyKey
   if (intent === 'converse') return false;
 
   // Sempre usa quando há dúvida sobre dados externos
-  if (/hoje|agora|atual|último|recente|2024|2025|2026|notícia|preço|cotaç|versão\s+(atual|latest)/i.test(message)) return true;
+  if (/hoje|agora|atual|último|recente|notícia|preço|cotaç|versão\s+(atual|latest)/i.test(message)) return true;
 
   // Cálculos
   if (/\b(calcul[ae]|converta?|quanto é|holerite|salário|porcentagem)\b/i.test(message)) return true;

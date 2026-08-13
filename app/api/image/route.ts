@@ -1,72 +1,100 @@
 import { NextResponse } from 'next/server';
 
-/**
- * Rota de geração de imagem do Kronos AI.
- * Atualmente usa o modelo de visão para ANÁLISE (OCR/extração de dados).
- * Geração artística é um recurso secundário — configurável via IMAGEN_API_KEY.
- */
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const POLLINATIONS_TOKEN = process.env.POLLINATIONS_API_KEY || '';
 
-const IMAGEN_KEY = process.env.IMAGEN_API_KEY;
+// ─── Geração via OpenAI DALL-E 3 ────────────────────────────────────────────
 
-const LIMIT_MESSAGE =
-  'O motor de renderização visual está em recarga. ' +
-  'A análise de documentos e dados permanece totalmente ativa. ' +
-  'Gostaria de focar na exportação de um relatório em PDF enquanto isso?';
-
-export async function POST(req: Request) {
+async function generateViaDALL_E3(prompt: string): Promise<string | null> {
+  if (!OPENAI_API_KEY) return null;
   try {
-    const { prompt } = await req.json();
-
-    if (!prompt || typeof prompt !== 'string') {
-      return NextResponse.json({ error: 'Prompt inválido.' }, { status: 400 });
-    }
-
-    // Se não há chave configurada, retorna mensagem profissional
-    if (!IMAGEN_KEY) {
-      console.log('[Kronos Image] Chave de geração não configurada — modo análise ativo.');
-      return NextResponse.json({ error: LIMIT_MESSAGE, fallback: true }, { status: 503 });
-    }
-
-    // Stable Diffusion via Stability AI (configurável)
-    const res = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${IMAGEN_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        text_prompts: [{ text: prompt, weight: 1 }],
-        cfg_scale: 7,
-        height: 1024,
-        width: 1024,
-        steps: 30,
-        samples: 1,
+        model: 'dall-e-3',
+        prompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'hd',
+        response_format: 'url',
       }),
     });
-
-    if (res.status === 429 || res.status === 402) {
-      console.warn('[Kronos Image] Limite atingido.');
-      return NextResponse.json({ error: LIMIT_MESSAGE, fallback: true }, { status: 503 });
-    }
-
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('[Kronos Image] Erro:', err);
-      return NextResponse.json({ error: LIMIT_MESSAGE, fallback: true }, { status: 503 });
-    }
-
+    if (!res.ok) return null;
     const data = await res.json();
-    const base64 = data?.artifacts?.[0]?.base64;
+    return data?.data?.[0]?.url ?? null;
+  } catch {
+    return null;
+  }
+}
 
-    if (!base64) {
-      return NextResponse.json({ error: LIMIT_MESSAGE, fallback: true }, { status: 503 });
+// ─── Prompt engineering avançado ─────────────────────────────────────────────
+
+function expandPrompt(userPrompt: string): string {
+  const p = userPrompt.trim().toLowerCase();
+
+  const isPhoto = /foto|person|pessoa|rosto|portrait|real|realistic|natureza|animal|cidade|street/i.test(p);
+  const is3d = /3d|render|cgi|blender|digital art|illustration|ilustra/i.test(p);
+  const isAbstract = /abstrato|abstract|art|pintura|paint|canvas/i.test(p);
+  const isProduct = /produto|product|logo|brand|minimal|clean/i.test(p);
+
+  const qualityBase = 'masterpiece, best quality, ultra detailed, sharp focus, 8K resolution';
+
+  let styleEnhancement = '';
+  if (isPhoto) {
+    styleEnhancement = 'photorealistic, Canon EOS R5, 85mm lens f/1.8, natural lighting, depth of field, professional photography';
+  } else if (is3d) {
+    styleEnhancement = 'octane render, cinema 4d, volumetric lighting, ray tracing, photorealistic materials';
+  } else if (isAbstract) {
+    styleEnhancement = 'vibrant colors, dynamic composition, award winning digital art, trending on artstation';
+  } else if (isProduct) {
+    styleEnhancement = 'studio lighting, white background, product photography, clean minimal composition';
+  } else {
+    styleEnhancement = 'cinematic lighting, dramatic atmosphere, hyper realistic, professional grade';
+  }
+
+  return `${userPrompt.trim()}, ${styleEnhancement}, ${qualityBase}`;
+}
+
+// ─── Fallback Pollinations ───────────────────────────────────────────────────
+
+async function generateViaUrl(prompt: string): Promise<string> {
+  const seed = Math.floor(Math.random() * 999999);
+  const encoded = encodeURIComponent(prompt);
+  return `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux&enhance=true`;
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const rawPrompt: string = body?.prompt ?? '';
+
+    if (!rawPrompt || typeof rawPrompt !== 'string') {
+      return NextResponse.json({ error: 'Prompt inválido.' }, { status: 400 });
     }
 
-    return NextResponse.json({ image: `data:image/png;base64,${base64}` });
+    const enhancedPrompt = expandPrompt(rawPrompt);
+    const displayPrompt = rawPrompt.trim().slice(0, 120);
+
+    console.log(`[Image] Prompt original: "${rawPrompt.slice(0, 60)}"`);
+    console.log(`[Image] Prompt expandido: "${enhancedPrompt.slice(0, 100)}"`);
+
+    // Tenta DALL-E 3 primeiro
+    const urlFromDALLE = await generateViaDALL_E3(enhancedPrompt);
+    if (urlFromDALLE) {
+      return NextResponse.json({ imageUrl: urlFromDALLE, displayPrompt, provider: 'dall-e-3' });
+    }
+
+    // Fallback Pollinations
+    const urlDirect = await generateViaUrl(enhancedPrompt);
+    return NextResponse.json({ imageUrl: urlDirect, displayPrompt, fallback: true, provider: 'pollinations' });
 
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Erro desconhecido.';
-    console.error('[Kronos Image] Erro:', msg);
-    return NextResponse.json({ error: LIMIT_MESSAGE, fallback: true }, { status: 503 });
+    console.error('[Image] Erro:', msg);
+    return NextResponse.json({ error: 'Não foi possível gerar a imagem.' }, { status: 500 });
   }
 }

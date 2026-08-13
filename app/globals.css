@@ -3,8 +3,25 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
-    background-color: #09090b; /* zinc-950 */
-    color: #f4f4f5; /* zinc-100 */
+  html {
+    background-color: #09090b;
+    overflow-x: hidden;
+  }
+  body {
+    background-color: #09090b;
+    color: #f4f4f5;
+    overflow-x: hidden;
+    max-width: 100vw;
+    /* NÃO use position:fixed no body — quebra o footer */
+  }
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+}
+
+@layer utilities {
+  /* Safe area para iPhone (home indicator) */
+  .pb-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }

@@ -35,3 +35,4 @@ next-env.d.ts
 
 # PDFs gerados pelo Kronos Genesis
 /public/OUTPUT_DOCS/
+.env*

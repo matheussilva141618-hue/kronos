@@ -21,7 +21,13 @@
     "proactive:agentic": "npx tsx scripts/proactive-worker.ts --agentic",
     "kronos:core": "npx tsx scripts/cognitive-worker.ts --full & npx tsx scripts/proactive-worker.ts --agentic",
     "bridge": "python scripts/kronos_bridge.py",
-    "bridge:install": "pip install psutil"
+    "bridge:install": "pip install psutil",
+    "cerebro": "node scripts/cerebro_nativo.js",
+    "cerebro:test": "node scripts/cerebro_nativo.js --test",
+    "cerebro:stats": "node scripts/cerebro_nativo.js --stats",
+    "colonia": "node scripts/genesis_colonia.js",
+    "colonia:stats": "node scripts/genesis_colonia.js --stats",
+    "colonia:reset": "node scripts/genesis_colonia.js --reset"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
@@ -32,7 +38,9 @@
     "@supabase/supabase-js": "^2.49.8",
     "@tailwindcss/typography": "^0.5.20",
     "@tavily/core": "^0.7.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/nodemailer": "^8.0.1",
+    "better-sqlite3": "^13.0.2",
     "framer-motion": "^12.42.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

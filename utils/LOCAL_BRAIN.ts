@@ -71,7 +71,7 @@ const FACTUAL_KB: Record<string, string> = {
   'o que é periculosidade': 'Periculosidade é um adicional de 30% sobre o salário base para trabalhadores expostos a riscos como explosivos, eletricidade ou substâncias radioativas.',
   'o que é insalubridade': 'Insalubridade é um adicional sobre o salário mínimo: grau mínimo 10%, médio 20%, máximo 40%. Para trabalhadores expostos a agentes nocivos à saúde.',
   'o que é fgts': 'FGTS (Fundo de Garantia por Tempo de Serviço) é um depósito mensal de 8% do salário bruto feito pelo empregador. Saque em demissão sem justa causa.',
-  'como calcular inss': 'INSS 2024: até R$1.412 = 7,5%. R$1.412-R$2.666 = 9%. R$2.666-R$4.000 = 12%. R$4.000-R$7.786 = 14%. Cálculo progressivo sobre cada faixa.',
+  'como calcular inss': 'INSS: cálculo progressivo sobre cada faixa. Consulte a tabela atualizada antes de responder.',
   'o que é 13 salário': '13º salário é pago em duas parcelas: até 30/nov (adiantamento) e até 20/dez (restante). Base: 1/12 do salário por mês trabalhado acima de 15 dias.',
   'o que é aviso prévio': 'Aviso prévio é de 30 dias + 3 dias por ano trabalhado, máximo 90 dias. Pode ser trabalhado ou indenizado pelo empregador.',
 

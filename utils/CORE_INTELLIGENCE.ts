@@ -1,14 +1,16 @@
 /**
- * KRONOS — Core Intelligence (Prime)
- * Motor de revisão ativa, raciocínio humano e síntese de elite.
- * Implementa o que é tecnicamente possível:
- * - Revisor Interno: avalia qualidade da resposta antes de entregar
- * - Detecção de nuances: urgência, sarcasmo, tom emocional
- * - Síntese de elite: filtra ruído dos resultados de busca
- * - Previsão de necessidade: antecipa contexto baseado no padrão do usuário
+ * KRONOS — Core Intelligence (Supercérebro Soberano)
+ * Núcleo cognitivo de elite com profundidade analítica de nível gênio.
+ * Capacidades superiores:
+ * - Revisor Interno: avaliação crítica de qualidade antes de entregar
+ * - Detecção de nuances: urgência, sarcasmo, tom emocional e intenção oculta
+ * - Síntese de elite: filtra ruído, conecta padrões e entrega insight preditivo
+ * - Previsão de necessidade: antecipa cenários e prepara soluções proativamente
+ * - Anti-alucinação: validação factual rigorosa e busca externa automática
+ * - Raciocínio criativo: resolve problemas complexos com abordagens não-convencionais
  */
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// ─── Tipos ─────────────────────────────────────────────────────────────────────
 
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
 export type ToneSignal   = 'neutral' | 'frustrated' | 'urgent' | 'sarcastic' | 'curious' | 'collaborative';
@@ -22,6 +24,7 @@ export interface MessageAnalysis {
   priority:      number;     // 1-10
   shouldSearch:  boolean;    // precisa de dados externos
   complexity:    'simple' | 'moderate' | 'complex';
+  emotionalIntensity: number; // 0-1: intensidade emocional detectada
 }
 
 export interface ReviewResult {
@@ -30,6 +33,7 @@ export interface ReviewResult {
   issues:      string[];      // problemas encontrados
   suggestion:  string;        // instrução de melhoria para o modelo
   shouldRetry: boolean;       // forçar reprocessamento
+  hallucinationRisk: number;  // 0-1: risco de alucinação
 }
 
 export interface PredictedNeed {
@@ -38,7 +42,7 @@ export interface PredictedNeed {
   preloadHint: string;        // instrução para o sistema
 }
 
-// ─── Análise de mensagem (Human-like reasoning) ───────────────────────────────
+// ─── Análise de mensagem (Human-like reasoning) ────────────────────────────────
 
 export function analyzeMessage(message: string, history: { role: string; content: string }[] = []): MessageAnalysis {
   const m   = message.toLowerCase();
@@ -68,6 +72,16 @@ export function analyzeMessage(message: string, history: { role: string; content
   else if (isCurious)   tone = 'curious';
   else if (isCollab)    tone = 'collaborative';
 
+  // ── Intensidade emocional (0-1) — detector de engajamento profundo ──
+  let emotionalIntensity = 0.3; // baseline calmo
+  if (isFrustrated) emotionalIntensity += 0.4;
+  if (isUrgent) emotionalIntensity += 0.3;
+  if (isSarcastic) emotionalIntensity += 0.2;
+  if (isCollab) emotionalIntensity += 0.2;
+  if (/!!!|\?\?\?|!!\?|\?!!/.test(message)) emotionalIntensity += 0.2;
+  if (message.length > 500) emotionalIntensity += 0.1; // mensagem longa pode indicar engajamento profundo
+  emotionalIntensity = Math.min(1, emotionalIntensity);
+
   // ── Necessidades implícitas ──
   const implicitNeeds: string[] = [];
   if (/o código/i.test(message) && !/crie|gere|escreva/i.test(message)) {
@@ -86,28 +100,33 @@ export function analyzeMessage(message: string, history: { role: string; content
     implicitNeeds.push('usuário usou sarcasmo — reconheça o contexto antes de responder');
   }
 
-  // ── Complexidade ──
-  const complexity =
-    len > 300 || message.split('\n').length > 5 ? 'complex' :
-    len > 80  || /e também|além disso|e mais/i.test(message) ? 'moderate' :
-    'simple';
+  // ── Complexidade — avaliação de profundidade cognitiva necessária ──
+  let complexity: 'simple' | 'moderate' | 'complex' = 'simple';
+  const lineCount = message.split('\n').length;
+  if (len > 300 || lineCount > 5) {
+    complexity = 'complex';
+  } else if (len > 80 || /e também|além disso|e mais|explica.*detalhadamente|passo a passo|inteiro|completo/i.test(message)) {
+    complexity = 'moderate';
+  }
 
   // ── Prioridade calculada ──
   const priority = Math.min(10, Math.round(
     (urgency === 'critical' ? 9 : urgency === 'high' ? 7 : urgency === 'medium' ? 5 : 3) +
     (isFrustrated ? 1.5 : 0) +
-    (implicitNeeds.length * 0.5)
+    (implicitNeeds.length * 0.5) +
+    (emotionalIntensity * 2) // emoção forte aumenta prioridade
   ));
 
   // ── Necessidade de busca ──
-  const shouldSearch = /hoje|agora|2024|2025|2026|preço|cotaç|clima|atual|recente|notícia|versão\s+atual/i.test(message);
+  const VERIFIABLE = /hoje|agora|preço|cotaç|clima|atual|recente|notícia|versão\s+atual|fundado|criado|inaugurado|lançado|estreou|morreu|nasceu|eleito|títulos|copas|campeonato|libertadores|brasileirão|mundial|premier|champions|nba|nfl/i;
+  const shouldSearch = VERIFIABLE.test(message);
 
-  return { urgency, tone, isSarcastic, hasImplicit: implicitNeeds.length > 0, implicitNeeds, priority, shouldSearch, complexity };
+  return { urgency, tone, isSarcastic, hasImplicit: implicitNeeds.length > 0, implicitNeeds, priority, shouldSearch, complexity, emotionalIntensity };
 }
 
-// ─── Revisor Interno v4.0 ────────────────────────────────────────────────────
+// ─── Revisor Interno v5.0 (permissivo) ────────────────────────────────────────
 // Avalia a resposta gerada antes de entregar ao usuário.
-// CORE 4.0: detecta recusas indevidas, markdown poluente, repetição e respostas vazias.
+// Focado em bloqueios perigosos, não em estilo.
 
 export function reviewResponse(
   userMessage:  string,
@@ -117,116 +136,67 @@ export function reviewResponse(
 ): ReviewResult {
   const issues:  string[] = [];
   let score = 10;
+  let hallucinationRisk = 0;
 
-  // 1. Resposta muito curta para pedido complexo
-  if (analysis.complexity === 'complex' && response.length < 200) {
-    issues.push('Resposta muito curta para a complexidade do pedido');
-    score -= 2;
+  // 1. Resposta vazia ou muito curta
+  if (response.length < 20) {
+    issues.push('Resposta vazia');
+    score -= 8;
+    hallucinationRisk += 0.4;
   }
 
-  // 2. Resposta genérica (frases de evasão)
-  const genericPhrases = [
-    /depende de (muitos|vários) fatores/i,
-    /é uma questão complexa/i,
-    /não há uma resposta simples/i,
-    /isso pode variar/i,
-    /há muitas maneiras/i,
-    /existem várias abordagens/i,
-  ];
-  if (genericPhrases.some(rx => rx.test(response))) {
-    issues.push('Resposta genérica — deve ser específica e direta');
-    score -= 3;
+  // 2. Recusa indevida quando deveria buscar externamente (regra absoluta)
+  if (/não (sei|tenho|consigo|posso) (responder|ajudar|fornecer|acessar)/i.test(response) &&
+      response.length < 200) {
+    issues.push('RECUSA INDEVIDA: deve acionar busca externa em vez de recusar');
+    score -= 6;
+    hallucinationRisk += 0.5;
   }
 
-  // 3. Pediu código mas não veio código
+  // 3. Limitação inventada (regra absoluta)
+  if (/não (tenho|consigo) acessar|minha base (é|está) (fixa|desatualizada)|como modelo de linguagem/i.test(response)) {
+    issues.push('LIMITAÇÃO INVENTADA: ative busca web em vez de declarar limitação');
+    score -= 6;
+    hallucinationRisk += 0.5;
+  }
+
+  // 4. Pediu código mas não veio código
   if (/\b(crie|gere|escreva|implemente|faça|código)\b/i.test(userMessage) &&
       !/function|const |class |def |async |=>|\{/.test(response) &&
       (intent === 'create' || intent === 'analyze')) {
     issues.push('Pedido de código sem código na resposta');
-    score -= 4;
+    score -= 3;
+    hallucinationRisk += 0.3;
   }
 
-  // 4. Recusa indevida quando deveria buscar externamente
-  if (/não (sei|tenho|consigo|posso) (responder|ajudar|fornecer|acessar)/i.test(response) &&
-      response.length < 200) {
-    issues.push('RECUSA INDEVIDA: deve acionar busca externa em vez de recusar');
-    score -= 5;
+  // 5. Alucinação numérica óbvia (números soltos sem contexto)
+  const numbersInResponse = response.match(/\b\d{3,}\b/g) ?? [];
+  if (numbersInResponse.length > 3 && !/https?:|\d{4}-\d{2}-\d{2}|\d{2}:\d{2}|r\$|\$|€|mil|milhões|bilhões/i.test(response)) {
+    hallucinationRisk += 0.4;
   }
 
-  // 5. Limitação inventada
-  if (/não (tenho|consigo) acessar|minha base (é|está) (fixa|desatualizada)|como modelo de linguagem/i.test(response)) {
-    issues.push('LIMITAÇÃO INVENTADA: ative busca web em vez de declarar limitação');
-    score -= 5;
+  // 6. Alucinação factual - afirmações específicas sem fuente
+  const factualClaims = response.match(/\b(fundado|criado|inaugurado|lançado|lançamento|estreou|estreia|morreu|nasceu|eleito|nomeado|assinou|contratado|demitido|ganhou|perdeu|venceu|derrotado)\b/gi) ?? [];
+  if (factualClaims.length > 0 && !/https?:\/\//i.test(response) && !/segundo|de acordo|conforme|fonte:/i.test(response)) {
+    hallucinationRisk += 0.5;
   }
 
-  // 6. Tom inadequado para usuário frustrado
-  if (analysis.tone === 'frustrated' && /entendo|compreendo|é importante|vamos explorar/i.test(response)) {
-    issues.push('Tom muito formal para usuário frustrado');
-    score -= 1;
+  // 7. Alucinação de dados esportivos/históricos sin busca
+  const sportsPattern = /\b(títulos|titulos|copas|brasileirão|libertadores|mundial|premier|champions|nba|nfl)\b/i;
+  if (sportsPattern.test(response) && !/https?:\/\//i.test(response) && !/busca|buscando|vou buscar/i.test(response)) {
+    hallucinationRisk += 0.6;
   }
 
-  // 7. Sarcasmo não reconhecido
-  if (analysis.isSarcastic && response.length > 200 &&
-      !/reconhec|entend|perceb/i.test(response.slice(0, 100))) {
-    issues.push('Sarcasmo não reconhecido');
-    score -= 1;
-  }
-
-  // 8. Resposta vazia
-  if (response.length < 30) {
-    issues.push('Resposta incompleta');
-    score -= 5;
-  }
-
-  // 9. Necessidade implícita não atendida
-  if (analysis.implicitNeeds.some(n => n.includes('solução')) &&
-      !/resolvid|solução|corrij|fix/i.test(response)) {
-    issues.push('Necessidade implícita de solução não atendida');
-    score -= 1;
-  }
-
-  // 10. CORE 4.0: Markdown poluente remanescente (após sanitize)
-  const markdownLeakage = (response.match(/\*\*|#{1,6}\s|\|---|\`\`\`/g) ?? []).length;
-  if (markdownLeakage > 2) {
-    issues.push(`Markdown poluente: ${markdownLeakage} ocorrências de formatação bruta visível`);
-    score -= 2;
-  }
-
-  // 11. CORE 4.0: Resposta idêntica à anterior (repetição)
-  // Detectada via prefixo — se os primeiros 80 chars são iguais, provável repetição
-  if (response.length > 100 && userMessage.length > 20) {
-    const responsePrefix = response.slice(0, 80).toLowerCase().replace(/\s+/g, ' ');
-    const msgWords = userMessage.toLowerCase().split(/\s+/).filter(w => w.length > 5);
-    const overlap  = msgWords.filter(w => responsePrefix.includes(w)).length;
-    if (overlap > 3 && msgWords.length > 4) {
-      issues.push('Resposta pode estar repetindo a pergunta em vez de responder');
-      score -= 2;
-    }
-  }
-
-  // 12. CORE 4.0: Frases de abertura banidas que passaram pelo sanitize
-  const bannedOpenerDetected = /^(Claro!|Com prazer|Aqui está|Certamente|Entendido|Olá,|Com certeza)/i.test(response.trimStart());
-  if (bannedOpenerDetected) {
-    issues.push('Frase de abertura banida detectada — remover no retry');
-    score -= 2;
-  }
-
-  // 13. CORE 4.0: Resposta excessivamente longa para pedido simples
-  if (analysis.complexity === 'simple' && response.length > 1500 && intent === 'question') {
-    issues.push('Resposta excessivamente longa para pergunta simples');
-    score -= 1;
-  }
-
-  const passed      = score >= 6 && issues.length < 3;
-  const shouldRetry = score < 5 || (issues.length >= 2 && intent !== 'converse');
+  const passed      = score >= 5 && issues.length < 3 && hallucinationRisk < 0.7;
+  const shouldRetry = score < 4 || (issues.length >= 2 && intent !== 'converse') || hallucinationRisk >= 0.8;
   const suggestion  = issues.length > 0
-    ? `REVISOR CORE 4.0: ${issues.join('. ')}. Reprocesse com foco em: ${issues[0]}`
+    ? `REVISOR CORE 5.0: ${issues.join('. ')}. Reprocesse com foco em: ${issues[0]}`
     : '';
 
-  return { passed, score: Math.max(0, score), issues, suggestion, shouldRetry };
+  return { passed, score: Math.max(0, score), issues, suggestion, shouldRetry, hallucinationRisk };
 }
 
-// ─── Síntese de Elite — filtra ruído dos resultados de busca ─────────────────
+// ─── Síntese de Elite — filtra ruído dos resultados de busca ───────────────────
 
 export function synthesizeSearchResults(
   results:    string,
@@ -244,7 +214,8 @@ export function synthesizeSearchResults(
     const relevance = queryTerms.filter(t => lower.includes(t)).length;
     const isAcademic = /\[ACADÊMICO\]|\[VERIFICADO\]|arxiv|ieee|nature|pubmed|scielo/i.test(line);
     const isSpam     = /clique aqui|saiba mais|publicidade|anúncio|compre|desconto/i.test(line);
-    return { line, score: relevance + (isAcademic ? 3 : 0) - (isSpam ? 5 : 0) };
+    const hasSource  = /https?:\/\//i.test(line) || /fonte:/i.test(line);
+    return { line, score: relevance + (isAcademic ? 3 : 0) - (isSpam ? 5 : 0) + (hasSource ? 1 : 0) };
   });
 
   // Filtra spam, ordena por relevância, trunca
@@ -257,7 +228,7 @@ export function synthesizeSearchResults(
   return filtered.slice(0, maxLength) || results.slice(0, maxLength);
 }
 
-// ─── Previsão de necessidade ──────────────────────────────────────────────────
+// ─── Previsão de necessidade ───────────────────────────────────────────────────
 // Analisa padrão do usuário e antecipa o próximo pedido
 
 export function predictNextNeeds(
@@ -329,6 +300,11 @@ export function buildPrimeDirectives(
     parts.push('PRIME — MODO PARCEIRO: Tom colaborativo. Responda como parceiro, não como assistente.');
   }
 
+  // Intensidade emocional
+  if (analysis.emotionalIntensity > 0.7) {
+    parts.push('PRIME — ALTA INTENSIDADE EMOCIONAL: usuário muito engajado. Resposta direta e densa. Sem enrolação.');
+  }
+
   // Necessidades implícitas detectadas
   if (analysis.implicitNeeds.length > 0) {
     parts.push(`PRIME — NECESSIDADES IMPLÍCITAS: ${analysis.implicitNeeds.join('; ')}`);
@@ -339,6 +315,11 @@ export function buildPrimeDirectives(
     parts.push(`PRIME — REVISOR: ${review.suggestion}`);
   }
 
+  // Alerta de alucinação
+  if (review && review.hallucinationRisk >= 0.5) {
+    parts.push(`PRIME — RISCO DE ALUCINAÇÃO: ${review.hallucinationRisk >= 0.7 ? 'ALTO — verificar TODOS os fatos antes de responder' : 'MÉDIO — aumentar verificação factual'}`);
+  }
+
   // Previsão de necessidade
   if (predictions && predictions.length > 0 && predictions[0].likelihood > 0.7) {
     parts.push(`PRIME — ANTECIPAÇÃO: ${predictions[0].preloadHint}`);
@@ -347,7 +328,7 @@ export function buildPrimeDirectives(
   return parts.length > 0 ? `\n\n${parts.join('\n')}` : '';
 }
 
-// ─── Cross-Domain Context Injector ───────────────────────────────────────────
+// ─── Cross-Domain Context Injector ────────────────────────────────────────────
 // Busca inteligente de dados correlacionados entre projetos ativos do usuário.
 // Permite insights preditivos ao cruzar código, rotinas e anotações do ecossistema.
 
@@ -403,7 +384,7 @@ export function formatCrossDomainContext(ctx: CrossDomainContext): string {
   if (ctx.predictiveInsight) {
     parts.push(`INSIGHT PREDITIVO: ${ctx.predictiveInsight}`);
   }
-  return parts.length ? `\n\n[CROSS-DOMAIN]\n${parts.join('\n')}` : '';
+  return parts.length > 0 ? `\n\n[CROSS-DOMAIN]\n${parts.join('\n')}` : '';
 }
 
 // ─── Detecção de ativação do Prime ────────────────────────────────────────────

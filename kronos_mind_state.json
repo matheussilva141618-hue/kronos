@@ -1,0 +1,80 @@
+{
+  "matheus": {
+    "username": "matheus",
+    "state": {
+      "knowledgeGaps": [],
+      "errorPatterns": [],
+      "userModel": {
+        "name": "matheus",
+        "expertise": "intermediário",
+        "preferredStyle": "direto",
+        "topicsOfInterest": [],
+        "recentFrustrations": []
+      },
+      "learningQueue": [],
+      "selfMetrics": {
+        "totalInteractions": 12,
+        "avgResponseQuality": 8.894431064557,
+        "correctionCount": 0,
+        "localResolutionRate": 0
+      },
+      "activeHypotheses": [],
+      "lastUpdated": 1786494014350,
+      "emotionalState": {
+        "mood": "eufórico",
+        "stressLevel": 0,
+        "confidence": 1,
+        "fatigue": 0.23999999999999996,
+        "lastMoodChange": 1786494014350
+      },
+      "workingMemory": {
+        "currentFocus": [
+          "ainda",
+          "josué",
+          "papai",
+          "chegaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "precisar",
+          "estou",
+          "josue"
+        ],
+        "attentionWeight": 0.928,
+        "contextWindow": [
+          "1786493823118:vou cagar",
+          "1786493838821:me alcanca o papel acho que me borrei",
+          "1786493856012:papel higienico",
+          "1786493869553:me manda um pix",
+          "1786493886935:oi nene",
+          "1786493894969:josue nene",
+          "1786493918393:sabia que meu filho de 7 anos josue ainda bebezinh",
+          "1786493930383:diz pra eloe que ainda e um bebe",
+          "1786493939281:josue",
+          "1786493951133:diz pra ele que ele e o bebe do pai",
+          "1786493993043:chegaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "1786494014350:com 7 anos ainda e bebe o josue?"
+        ],
+        "maxCapacity": 7
+      },
+      "metacognition": {
+        "selfReflection": [
+          "Respostas curtas são mais eficientes",
+          "Usuário prefere direção, não enrolação",
+          "Sempre validar fatos antes de afirmar"
+        ],
+        "knownWeaknesses": [
+          "pode alucinar dados específicos sem busca"
+        ],
+        "adaptationStrategy": "priorizar clareza e verificação factual",
+        "lastReflection": 1786493822596
+      },
+      "hallucinationGuard": {
+        "confidenceThreshold": 0.39999999999999997,
+        "factualChecks": 12,
+        "lastValidationPass": true,
+        "suspiciousPatterns": [
+          "Resposta com score 4"
+        ]
+      }
+    },
+    "updated_at": "2026-08-12T00:20:45.772Z"
+  }
+}

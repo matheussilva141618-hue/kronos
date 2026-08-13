@@ -45,7 +45,7 @@ function execJsonParse(input: string): unknown {
 }
 
 function execDateCalc(input: string): string {
-  // Formatos: "hoje + 30 dias", "2024-01-01 + 6 meses", "diff 2024-01-01 2025-01-01"
+  // Formatos: "hoje + 30 dias", "<data> + 6 meses", "diff <data> <data>"
   const diffMatch = input.match(/diff\s+([\d-]+)\s+([\d-]+)/i);
   if (diffMatch) {
     const d1   = new Date(diffMatch[1]);
