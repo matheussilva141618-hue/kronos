@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect, useCallback, lazy, Suspense } from 
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Plus, LogOut, Paperclip, X, FileText, Square, Globe, Menu, Mail, Image, Copy, Check, Briefcase, BookOpen, Sparkles, Home } from "lucide-react";
 import type { AutonomousCoreStatus } from "@/utils/COGNITIVE_ENGINE";
-import { useRouter } from "next/navigation";
 import KronosAvatar   from "@/components/KronosAvatar";
 import ProgressBar    from "@/components/ProgressBar";
 import FileExplorer   from "@/components/FileExplorer";
@@ -21,6 +20,7 @@ import { loadMemory, formatMemoryForPrompt } from "@/utils/memory";
 import type { KronosMode, KidsProfile } from "@/app/api/chat/route";
 
 const ChatExporter = lazy(() => import("@/components/ChatExporter"));
+
 
 interface Message { role: "user" | "assistant"; content: string; }
 interface Conversation { id: string; title: string; messages: Message[]; mode: KronosMode; updatedAt?: string; }
@@ -84,7 +84,6 @@ export default function Dashboard() {
   const [isLoading, setIsLoading]                 = useState(false);
   const [isSearching, setIsSearching]             = useState(false);
   const [hydrated, setHydrated]                   = useState(false);
-  const [redirecting, setRedirecting]             = useState(false);
   const [attachedFiles, setAttached]              = useState<AttachedFile[]>([]);
   const [showCommandBar, setShowCommandBar]       = useState(false);
   const [commandQuery, setCommandQuery]           = useState("");
@@ -101,24 +100,23 @@ export default function Dashboard() {
   const inputRef       = useRef<HTMLInputElement>(null);
   const abortRef       = useRef<AbortController | null>(null);
   const touchStartX    = useRef<number>(0);
-  const router         = useRouter();
 
   // ── Hydration / Auth ─────────────────────────────────────────────────────
   useEffect(() => {
-    const stored = localStorage.getItem("kronos_username");
-    if (!stored) { setRedirecting(true); router.push("/login"); return; }
-    setUsername(stored);
-    const savedMode = (localStorage.getItem(MODE_KEY(stored)) as KronosMode) || "profissional";
+    let username = localStorage.getItem("kronos_username") || "User";
+    localStorage.setItem("kronos_username", username);
+    setUsername(username);
+    const savedMode = (localStorage.getItem(MODE_KEY(username)) as KronosMode) || "profissional";
     setMode(savedMode);
     try {
-      const raw = localStorage.getItem(CHATS_KEY(stored));
+      const raw = localStorage.getItem(CHATS_KEY(username));
       if (raw) {
         const parsed: Conversation[] = JSON.parse(raw);
         if (parsed.length > 0) {
           setConvs(parsed); setActiveId(parsed[0].id); setHydrated(true);
-          try { const mr = localStorage.getItem(MEDIA_KEY(stored)); if (mr) setMediaItems(JSON.parse(mr)); } catch { /**/ }
+          try { const mr = localStorage.getItem(MEDIA_KEY(username)); if (mr) setMediaItems(JSON.parse(mr)); } catch { /**/ }
           if (savedMode === "kids") {
-            fetch(`/api/kids-profile?username=${encodeURIComponent(stored)}`)
+            fetch(`/api/kids-profile?username=${encodeURIComponent(username)}`)
               .then((r) => r.json())
               .then((d) => { if (d.profile) setKidsProfile(d.profile); })
               .catch(() => {});
@@ -127,9 +125,9 @@ export default function Dashboard() {
         }
       }
     } catch { /**/ }
-    const first = newConv(stored, savedMode);
+    const first = newConv(username, savedMode);
     setConvs([first]); setActiveId(first.id); setHydrated(true);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (!hydrated || !username) return;
@@ -517,10 +515,10 @@ export default function Dashboard() {
     updateConv(activeId, [...msgs, { role:"assistant", content:`WhatsApp enviado para +${number.replace(/\D/g,"")}.` }]);
   };
 
-  const handleLogout = () => { localStorage.removeItem("kronos_username"); router.push("/login"); };
+  const handleLogout = () => { localStorage.removeItem("kronos_username"); window.location.reload(); };
   const initials = username.slice(0,2).toUpperCase();
 
-  if (redirecting || !hydrated) return (
+  if (!hydrated) return (
     <div className="flex h-screen bg-zinc-950 items-center justify-center"><KronosAvatar size={40} /></div>
   );
 
