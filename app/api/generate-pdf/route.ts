@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/generate-pdf
  * Recebe conteúdo do LLM, gera PDF profissional via PDF_ENGINE e retorna URL.

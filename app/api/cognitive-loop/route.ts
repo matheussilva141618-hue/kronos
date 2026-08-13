@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/cognitive-loop
  * Pipeline Cognitivo Autônomo com Meta-Cognição e Consolidação Cross-Domain.
@@ -20,9 +22,9 @@ import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { createServiceClient } from '@/utils/supabase/service';
 import { saveVectorMemory } from '@/utils/VECTOR_MEMORY';
 
-const apiKey      = process.env.CEREBRAS_API_KEY!;
+const apiKey      = process.env.CEREBRAS_API_KEY;
 const LOOP_SECRET = process.env.COGNITIVE_LOOP_SECRET ?? 'kronos-loop-2026';
-const client      = new Cerebras({ apiKey });
+const client      = apiKey ? new Cerebras({ apiKey }) : null;
 
 // ─── Banco de temas por domínio ───────────────────────────────────────────────
 
@@ -366,6 +368,10 @@ async function consolidateMemoryEmbeddings(): Promise<{ consolidated: number; sk
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Chave da API não configurada.' }, { status: 500 });
+  }
+
   const auth = req.headers.get('authorization') ?? '';
   if (!auth.includes(LOOP_SECRET)) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { tavily } from '@tavily/core';
@@ -80,12 +82,14 @@ function setCache(key: string, response: string): void {
 }
 
 // Cliente Cerebras com keep-alive agressivo para minimizar latência de conexão
-const client = new Cerebras({
-  apiKey,
-  defaultHeaders: { 'Connection': 'keep-alive' },
-  maxRetries: 1,
-  timeout:    28000,
-});
+const client = apiKey
+  ? new Cerebras({
+      apiKey,
+      defaultHeaders: { 'Connection': 'keep-alive' },
+      maxRetries: 1,
+      timeout:    28000,
+    })
+  : null;
 
 const TEXT_MODEL   = 'gpt-oss-120b';
 const VISION_MODEL = 'gemma-4-31b';

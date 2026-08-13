@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/study-kids — Motor de Inteligência Nativa do Kronos Study/Kids
  *
@@ -219,6 +221,9 @@ export async function POST(req: Request) {
     }
 
     // ── 9. Chamada ao LLM ─────────────────────────────────────────────────────
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Chave da API não configurada.' }, { status: 500 });
+    }
     const client = new Cerebras({ apiKey, defaultHeaders: { 'Connection': 'keep-alive' }, maxRetries: 1, timeout: 28000 });
 
     const completion = await client.chat.completions.create({

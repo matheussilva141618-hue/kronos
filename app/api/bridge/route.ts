@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/bridge
  * Proxy para o Kronos OS Bridge local (http://127.0.0.1:8000).

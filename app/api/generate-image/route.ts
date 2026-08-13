@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 
 const POLLINATIONS_TOKEN = process.env.POLLINATIONS_API_KEY || '';

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/feedback
  * Recebe avaliação e correções do usuário para ajuste de preferências.

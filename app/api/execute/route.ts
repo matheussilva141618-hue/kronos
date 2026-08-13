@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/execute
  * Motor de execução sandboxed com auditoria.

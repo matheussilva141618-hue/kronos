@@ -1,10 +1,12 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
 
 const apiKey = process.env.CEREBRAS_API_KEY;
 const MODEL = "gpt-oss-120b";
 
-const client = new Cerebras({ apiKey, defaultHeaders: { Connection: "keep-alive" }, maxRetries: 1, timeout: 28000 });
+const client = apiKey ? new Cerebras({ apiKey, defaultHeaders: { Connection: "keep-alive" }, maxRetries: 1, timeout: 28000 }) : null;
 
 export async function POST(req: Request) {
   if (!apiKey) return NextResponse.json({ error: "Chave da API não configurada." }, { status: 500 });
