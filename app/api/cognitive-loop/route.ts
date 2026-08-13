@@ -13,6 +13,8 @@
  * Header: Authorization: Bearer <COGNITIVE_LOOP_SECRET>
  */
 
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { createServiceClient } from '@/utils/supabase/service';
