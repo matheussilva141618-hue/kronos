@@ -1,22 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/cognitive-loop
- * Pipeline Cognitivo Autônomo com Meta-Cognição e Consolidação Cross-Domain.
- *
- * Ciclo completo:
- * 1. Auto-direção: escolhe tema com base em gaps no conhecimento existente
- * 2. Consulta Cerebras: gera conhecimento profundo
- * 3. Meta-cognição: critica e refina o conhecimento gerado
- * 4. Avaliação de diretrizes: propõe refinamentos para o próximo ciclo
- * 5. Persistência: salva no Supabase com score de qualidade
- *
- * Acione via cron: POST /api/cognitive-loop
- * Header: Authorization: Bearer <COGNITIVE_LOOP_SECRET>
- */
-
-export const dynamic = 'force-dynamic';
-
 import { NextResponse } from 'next/server';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { createServiceClient } from '@/utils/supabase/service';
