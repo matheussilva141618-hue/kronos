@@ -121,6 +121,8 @@ Responda APENAS em JSON (sem a tag <thought>):
 }`;
 
   try {
+    if (!apiKey) return { skipThought: true, intent: 'converse', posture: 'direto', memoryHint: '', toneGuide: '', selfCritique: '', coherenceCheck: '', directiveWeight: 0 }
+
     const client = new Cerebras({ apiKey, maxRetries: 0, timeout: CoT_TIMEOUT });
     const res = await client.chat.completions.create({
       model: FAST_MODEL,

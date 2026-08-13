@@ -356,6 +356,16 @@ export async function runAgentLoop(
   maxIter:   number = 4,
   username?: string,
 ): Promise<AgentResult> {
+  if (!apiKey) {
+    return {
+      response: '',
+      toolsUsed: [],
+      iterations: 0,
+      validated: false,
+      searched: false,
+    }
+  }
+
   const client    = new Cerebras({ apiKey, maxRetries: 1, timeout: 25000 });
   const toolsUsed: string[] = [];
   let   iterations = 0;

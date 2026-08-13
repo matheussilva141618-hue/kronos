@@ -1,7 +1,13 @@
 import { createServerClient, type CookieMethodsServer } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createSupabaseStub } from './service'
 
 export async function createClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) return createSupabaseStub()
+
   const cookieStore = await cookies()
 
   const cookieMethods: CookieMethodsServer = {
@@ -20,8 +26,8 @@ export async function createClient() {
   }
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     { cookies: cookieMethods }
   )
 }

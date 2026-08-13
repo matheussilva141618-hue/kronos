@@ -20,9 +20,9 @@ import { createClient } from '@supabase/supabase-js';
 
 config({ path: resolve(process.cwd(), '.env.local') });
 
-const CEREBRAS_KEY  = process.env.CEREBRAS_API_KEY!;
-const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const CEREBRAS_KEY  = process.env.CEREBRAS_API_KEY;
+const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MODEL         = 'gpt-oss-120b';
 const TABLE         = 'conhecimentos_kronos';
 
